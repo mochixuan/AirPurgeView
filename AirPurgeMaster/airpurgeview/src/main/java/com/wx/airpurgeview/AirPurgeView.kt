@@ -1,20 +1,18 @@
 package com.wx.airpurgeview
 
-import android.animation.AnimatorSet
+import android.animation.Animator
 import android.animation.ObjectAnimator
 import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.DashPathEffect
-import android.graphics.Paint
+import android.graphics.*
 import android.os.Build
 import android.util.AttributeSet
-import android.view.View
+import android.view.animation.AccelerateInterpolator
 import android.view.animation.DecelerateInterpolator
 import android.view.animation.LinearInterpolator
+import android.widget.LinearLayout
 
-class AirPurgeView: View {
+class AirPurgeView: LinearLayout {
 
     //圆的直径大小占宽高中最小的那个的比例
     private var mCircleProportion = 0.6f
@@ -24,16 +22,13 @@ class AirPurgeView: View {
 
     //实心圆环的宽度
     private val mSolidRingWidth = DensityUtil.dpTopx(context,6f)
-
-    //背景颜色数组
-    private var mBgColors = ArrayList<Int>()
-    //背景颜色数组对于的数字
-    private var mAirSections = ArrayList<Int>()
+    private val mDashedRingWidth = mSolidRingWidth*4
 
     //显示的字体上
     private var mTopTitle = "PM2.5"
     private var mCenterTitle = "521"
     private var mBottomTitle = "空气优"
+
 
     private var mTopTitleTextSize = DensityUtil.spTopx(context,12f)
     private var mCenterTitleTextSize = DensityUtil.spTopx(context,56f)
@@ -41,28 +36,49 @@ class AirPurgeView: View {
 
     private val mPaint = Paint()
 
-    private var mAnimator: AnimatorSet = AnimatorSet()
-
     //虚线圆的半径差
     private var dashedRadiusDiff = 0f
     private var rotateProgress = 0f
 
+    //背景色
+    private var bgColor:Int = 0xff9400D3.toInt()
+
+    //动画
+    private var mRotateAnimator:ObjectAnimator? = null
+    private var mJumpAnimator: ObjectAnimator? = null
+    private var mBgColorAnim:ObjectAnimator? = null
+
+    private var isCancelJumpAnim = false
+
+    //风速级别
+    private var mSpeedLevel:Long = 3000
+
+    //颗粒物
+    private var mGranuleView: GranuleView? = null
+
     constructor(context: Context?) : this(context,null)
     constructor(context: Context?, attrs: AttributeSet?) : this(context, attrs,0)
     constructor(context: Context?, attrs: AttributeSet?, defStyleAttr: Int) : super(context, attrs, defStyleAttr) {
+        init()
+    }
 
+    private fun init() {
         mPaint.isAntiAlias = true
+
+        mGranuleView = GranuleView(context)
+        val param = LayoutParams(LayoutParams.WRAP_CONTENT,LayoutParams.WRAP_CONTENT)
+        mGranuleView!!.layoutParams = param
+        addView(mGranuleView)
     }
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
-        onStartAnim()
     }
 
     override fun onDraw(canvas: Canvas?) {
         super.onDraw(canvas)
 
-        canvas!!.drawColor(Color.GREEN)
+        canvas!!.drawColor(bgColor)
 
         drawAllText(canvas)
         drawSolidCircle(canvas)
@@ -74,7 +90,7 @@ class AirPurgeView: View {
 
     }
 
-    fun drawSolidCircle(canvas: Canvas) {
+    private fun drawSolidCircle(canvas: Canvas) {
         //实心圆环
         mPaint.strokeWidth = mSolidRingWidth
         mPaint.color = mColor
@@ -85,21 +101,69 @@ class AirPurgeView: View {
         canvas.drawCircle(solidRingCx,solidRingCy,solidRingRadius,mPaint)
     }
 
-    fun drawDashedCircle(canvas: Canvas) {
-        //虚线内圆环
-        mPaint.strokeWidth = mSolidRingWidth
+    private fun drawDashedCircle(canvas: Canvas) {
+        //非渐变扇叶
+        /*mPaint.strokeWidth = mSolidRingWidth*4
         mPaint.color = mColor
         mPaint.style = Paint.Style.STROKE
-        val pathEffect = DashPathEffect(floatArrayOf(mSolidRingWidth/2f,mSolidRingWidth),0f)
+        val pathEffect = DashPathEffect(floatArrayOf(mPaint.strokeWidth*0.4f,mPaint.strokeWidth),0f)
         mPaint.pathEffect = pathEffect
         val dashedRingCx = measuredWidth/2f
         val dashedRingCy = measuredHeight/2f
-        val dashedRingRadius = mCircleProportion/2f*Math.min(measuredWidth,measuredHeight) - dashedRadiusDiff
+        val dashedRingRadius = mCircleProportion/2f*Math.min(measuredWidth,measuredHeight) - mPaint.strokeWidth*0.5f
         canvas.drawCircle(dashedRingCx,dashedRingCy,dashedRingRadius,mPaint)
-        mPaint.pathEffect = null
+        mPaint.pathEffect = null*/
+
+        //每个角度
+        mPaint.strokeWidth = dashedRadiusDiff
+        mPaint.color = mColor
+        mPaint.style = Paint.Style.STROKE
+        val solidInnerRadius = mCircleProportion/2f*Math.min(measuredWidth,measuredHeight) - mSolidRingWidth*0.5f
+        val dashedRingRadius = solidInnerRadius - dashedRadiusDiff*0.5f  //完美连接
+        val rectF = RectF()
+        rectF.left = measuredWidth/2f - dashedRingRadius
+        rectF.top = measuredHeight/2f - dashedRingRadius
+        rectF.right = measuredWidth/2f + dashedRingRadius
+        rectF.bottom = measuredHeight/2f + dashedRingRadius
+        val eachAngleSize = 15f
+        val eachAngleGap = 5f
+        var curAngle = -eachAngleSize/2f
+        //实现渐变扇叶
+        while (curAngle < 360 - eachAngleSize) {
+
+            val x0 = measuredWidth/2f + (Math.cos((curAngle)*Math.PI/180)*(dashedRingRadius-dashedRadiusDiff*0.5)).toFloat()
+            val y0 = measuredHeight/2f + (Math.sin((curAngle)*Math.PI/180)*(dashedRingRadius-dashedRadiusDiff*0.5)).toFloat()
+
+            val x1 = measuredWidth/2f + (Math.cos((curAngle+eachAngleSize)*Math.PI/180)*(dashedRingRadius+dashedRadiusDiff*0.5)).toFloat()
+            val y1 = measuredHeight/2f + (Math.sin((curAngle+eachAngleSize)*Math.PI/180)*(dashedRingRadius+dashedRadiusDiff*0.5)).toFloat()
+
+            val shader = LinearGradient(
+                    x0,
+                    y0,
+                    x1,
+                    y1,
+                    Color.parseColor("#22ffffff"),
+                    Color.parseColor("#ffffffff"),
+                    Shader.TileMode.CLAMP
+            )
+            mPaint.shader = shader
+
+            canvas?.drawArc(
+                    rectF,
+                    curAngle,
+                    eachAngleSize,
+                    false,
+                    mPaint
+            )
+
+            curAngle = curAngle + eachAngleSize + eachAngleGap
+
+        }
+        mPaint.shader = null //记得清除
+
     }
 
-    fun drawAllText(canvas: Canvas) {
+    private fun drawAllText(canvas: Canvas) {
         //中间字体绘制
         mPaint.strokeWidth = 0f
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -137,7 +201,7 @@ class AirPurgeView: View {
     }
 
     //简单方便
-    fun getMeasureSpecSize(measureSpec: Int,maxSize: Int): Int {
+    private fun getMeasureSpecSize(measureSpec: Int,maxSize: Int): Int {
         var size = maxSize
         val specSize = MeasureSpec.getSize(measureSpec)
         val specMode = MeasureSpec.getMode(measureSpec)
@@ -149,34 +213,103 @@ class AirPurgeView: View {
         return size
     }
 
-    //动画
-    @SuppressLint("WrongConstant")
-    fun onStartAnim() {
-        if (mAnimator.isRunning) {
-            mAnimator.cancel()
-        }
-        //出风扇
-        val anim1 = ObjectAnimator.ofFloat(this,"dashedRadiusDiff",0f,mSolidRingWidth)
-        anim1.interpolator = DecelerateInterpolator()
-        anim1.duration = 1000
-        //循环进度
-        val anim2 = ObjectAnimator.ofFloat(this,"rotateProgress",0f,360f)
-        anim2.duration = 6000
-        anim2.interpolator = LinearInterpolator()
-        anim2.repeatMode = ObjectAnimator.INFINITE
-
-
-        mAnimator.play(anim1).before(anim2)
-        mAnimator.start()
-    }
-
-    fun setDashedRadiusDiff(dashedRadiusDiff:Float) {
+    private fun setDashedRadiusDiff(dashedRadiusDiff:Float) {
         this.dashedRadiusDiff = dashedRadiusDiff
         invalidate()
     }
 
-    fun setRotateProgress(rotateProgress: Float) {
+    private fun setRotateProgress(rotateProgress: Float) {
         this.rotateProgress = rotateProgress
+        invalidate()
+    }
+
+    //动画
+    @SuppressLint("WrongConstant")
+    fun onStartAnim() {
+        onFanAnim(true)
+    }
+
+    fun onEndAnim() {
+        if (mJumpAnimator != null && mJumpAnimator!!.isRunning) {
+            mJumpAnimator!!.cancel()
+            mJumpAnimator!!.removeAllListeners()
+        }
+        if (mRotateAnimator != null && mRotateAnimator!!.isRunning) {
+            mRotateAnimator!!.cancel()
+        }
+        onFanAnim(false)
+    }
+
+    //扇叶
+    private fun onFanAnim(isOpenFan: Boolean) {
+        if (mJumpAnimator != null && mJumpAnimator!!.isRunning) {
+            mJumpAnimator!!.cancel()
+        }
+        if (isOpenFan) {
+            mJumpAnimator = ObjectAnimator.ofFloat(this,"dashedRadiusDiff",dashedRadiusDiff,mDashedRingWidth)
+            mJumpAnimator!!.interpolator = DecelerateInterpolator()
+            mJumpAnimator!!.addListener(object : Animator.AnimatorListener{
+                override fun onAnimationRepeat(p0: Animator?) {
+                }
+                override fun onAnimationEnd(p0: Animator?) {
+                    if (!isCancelJumpAnim) {
+                        onRotateAnim()
+                    }
+                    isCancelJumpAnim = false
+                }
+                override fun onAnimationCancel(p0: Animator?) {
+                    isCancelJumpAnim = true
+                }
+                override fun onAnimationStart(p0: Animator?) {
+
+                }
+            })
+            mJumpAnimator!!.duration = 2000
+        } else {
+            mJumpAnimator = ObjectAnimator.ofFloat(this,"dashedRadiusDiff",dashedRadiusDiff,0f)
+            mJumpAnimator!!.interpolator = AccelerateInterpolator()
+            mJumpAnimator!!.duration = 1200
+        }
+        mJumpAnimator!!.start()
+    }
+
+    private fun onRotateAnim() {
+        if (mRotateAnimator != null && mRotateAnimator!!.isRunning) {
+            mRotateAnimator!!.cancel()
+        }
+        mRotateAnimator = ObjectAnimator.ofFloat(this,"rotateProgress",rotateProgress.toInt().toFloat(),rotateProgress.toInt()+360f) //实现无缝变速
+        mRotateAnimator!!.duration = mSpeedLevel
+        mRotateAnimator!!.interpolator = LinearInterpolator()
+        mRotateAnimator!!.repeatCount = ObjectAnimator.INFINITE
+        mRotateAnimator!!.start()
+    }
+
+    private fun setBgColor(color: Int) {
+        this.bgColor = color
+        invalidate()
+    }
+
+    fun setSpeedLevel(speedLevel:Long) {
+        this.mSpeedLevel = speedLevel
+        if (mRotateAnimator != null && mRotateAnimator!!.isRunning) {   //没运行就先别转动,节余点消耗
+            onRotateAnim()
+        }
+    }
+
+    //时间尽量写短点
+    fun setBackgroundColor(color: Int,durtion: Long) {
+        if (mBgColorAnim != null && mBgColorAnim!!.isRunning) {
+            mBgColorAnim!!.cancel()
+        }
+        mBgColorAnim = ObjectAnimator.ofInt(this,"bgColor",bgColor,color)
+        mBgColorAnim!!.setEvaluator(HsvEvaluator())
+        mBgColorAnim!!.duration = durtion
+        mBgColorAnim!!.interpolator = LinearInterpolator()
+        mBgColorAnim!!.start()
+    }
+
+    fun setCenterTitle(title:String) {
+        this.mCenterTitle = title
         invalidate()
     }
 
