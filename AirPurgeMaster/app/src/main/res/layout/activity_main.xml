@@ -6,63 +6,112 @@
     android:layout_height="match_parent"
     tools:context="com.wx.airpurgemaster.MainActivity">
 
-    <com.wx.airpurgeview.AirPurgeView
+    <com.wx.airpurgeview.AirPurgeLayoutView
         android:id="@+id/airpurge_view"
         android:layout_width="match_parent"
         android:layout_height="400dp"
-        android:layout_marginTop="10dp"
+        app:toptitle="PM2.5"
+        app:centertitle="521"
+        app:bottomtitle="空气优"
+        app:circle_proportion="0.66"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"/>
+
+    <View
+        android:id="@+id/tv_state"
+        android:layout_width="match_parent"
+        android:layout_height="10dp"
+        app:layout_constraintTop_toBottomOf="@+id/airpurge_view"/>
 
     <Button
         android:id="@+id/btn1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:text="changeNum"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/btn2"
-        app:layout_constraintStart_toStartOf="parent" />
-
+        android:text="改变显示"
+        app:layout_constraintRight_toLeftOf="@id/btn2"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tv_state" />
 
     <Button
         android:id="@+id/btn2"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:text="changeBg"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/btn3"
+        android:text="Hsv算法渐变背景色"
+        app:layout_constraintRight_toLeftOf="@id/btn3"
+        app:layout_constraintTop_toBottomOf="@+id/tv_state"
         app:layout_constraintStart_toEndOf="@+id/btn1" />
 
     <Button
         android:id="@+id/btn3"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:text="Start"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/btn4"
-        app:layout_constraintStart_toEndOf="@+id/btn2" />
+        android:text="开启清洁"
+        app:layout_constraintStart_toEndOf="@+id/btn2"
+        app:layout_constraintRight_toLeftOf="@id/btn4"
+        app:layout_constraintTop_toBottomOf="@+id/tv_state" />
 
     <Button
         android:id="@+id/btn4"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:text="end"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/btn3" />
+        android:text="关闭清洁"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintLeft_toRightOf="@id/btn3"
+        app:layout_constraintTop_toBottomOf="@+id/tv_state"/>
 
     <Button
         android:id="@+id/btn5"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="changeSpeed"
-        app:layout_constraintBottom_toTopOf="@+id/btn1"
-        app:layout_constraintStart_toStartOf="parent"
-        android:layout_marginLeft="8dp" />
+        android:text="无缝变档"
+        app:layout_constraintStart_toEndOf="@+id/btn6"
+        app:layout_constraintTop_toBottomOf="@+id/btn1"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <Button
+        android:id="@+id/btn6"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="开启颗粒物效果"
+        app:layout_constraintRight_toLeftOf="@id/btn7"
+        app:layout_constraintStart_toEndOf="@+id/btn5"
+        app:layout_constraintTop_toBottomOf="@+id/btn2" />" />
+
+    <Button
+        android:id="@+id/btn7"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="关闭颗粒物效果"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/btn6"
+        app:layout_constraintTop_toBottomOf="@+id/btn4" />
+
+    <Button
+        android:id="@+id/btn8"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="改变颗粒物运动状态"
+        app:layout_constraintTop_toBottomOf="@+id/btn5"
+        app:layout_constraintStart_toStartOf="parent" />
+
+
+    <Button
+        android:id="@+id/btn9"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="实践样式1"
+        app:layout_constraintTop_toBottomOf="@+id/btn6"
+        app:layout_constraintStart_toEndOf="@+id/btn8"
+        app:layout_constraintEnd_toStartOf="@+id/btn10" />
+
+    <Button
+        android:id="@+id/btn10"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="实践样式2"
+        app:layout_constraintTop_toBottomOf="@+id/btn7"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/btn9" />
 
 </android.support.constraint.ConstraintLayout>

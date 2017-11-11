@@ -7,32 +7,32 @@ import android.content.Context
 import android.graphics.*
 import android.os.Build
 import android.util.AttributeSet
+import android.view.View
 import android.view.animation.AccelerateInterpolator
 import android.view.animation.DecelerateInterpolator
 import android.view.animation.LinearInterpolator
-import android.widget.LinearLayout
 
-class AirPurgeView: LinearLayout {
+class AirPurgeView: View {
 
     //圆的直径大小占宽高中最小的那个的比例
-    private var mCircleProportion = 0.6f
+    private var mCircleProportion = 0f
 
     //圆的颜色
-    private var mColor = Color.parseColor("#ffffffff")
+    private var mColor = Color.WHITE
 
     //实心圆环的宽度
-    private val mSolidRingWidth = DensityUtil.dpTopx(context,6f)
-    private val mDashedRingWidth = mSolidRingWidth*4
+    private var mSolidRingWidth = 0f
+    private var mDashedRingWidth = 0f
 
     //显示的字体上
-    private var mTopTitle = "PM2.5"
-    private var mCenterTitle = "521"
-    private var mBottomTitle = "空气优"
+    private var mTopTitle = ""
+    private var mCenterTitle = ""
+    private var mBottomTitle = ""
 
 
-    private var mTopTitleTextSize = DensityUtil.spTopx(context,12f)
-    private var mCenterTitleTextSize = DensityUtil.spTopx(context,56f)
-    private var mBottomTitleTextSize = DensityUtil.spTopx(context,16f)
+    private var mTopTitleTextSize = 0f
+    private var mCenterTitleTextSize = 0f
+    private var mBottomTitleTextSize = 0f
 
     private val mPaint = Paint()
 
@@ -53,22 +53,40 @@ class AirPurgeView: LinearLayout {
     //风速级别
     private var mSpeedLevel:Long = 3000
 
-    //颗粒物
-    private var mGranuleView: GranuleView? = null
+    //每片扇叶的角度
+    private var mEachPanAngle = 0f
+    //相邻扇叶的间隙
+    private var mEachPanAngleGap = 0f
+
+    //扇叶监听
+    private var mPanListener: onPanListener? = null
 
     constructor(context: Context?) : this(context,null)
     constructor(context: Context?, attrs: AttributeSet?) : this(context, attrs,0)
-    constructor(context: Context?, attrs: AttributeSet?, defStyleAttr: Int) : super(context, attrs, defStyleAttr) {
-        init()
-    }
+    constructor(context: Context?, attrs: AttributeSet?, defStyleAttr: Int) : super(context, attrs, defStyleAttr)
 
-    private fun init() {
+    fun initAirPurge(circleProportion: Float,mainColor: Int,solidringWidth: Float,dashedringidth: Float,
+                     topTitle: String,centerTitle: String,bottomTitle: String,
+                     topTitleTextSize: Float,centerTitleTextSize: Float,bottomTitleTextSize: Float,
+                     eachPanAngle: Float,eachPanAngleGap:Float) {
+
+        this.mCircleProportion = circleProportion
+        this.mColor = mainColor
+        this.mSolidRingWidth = solidringWidth
+        this.mDashedRingWidth = dashedringidth
+
+        this.mTopTitle = topTitle
+        this.mCenterTitle = centerTitle
+        this.mBottomTitle = bottomTitle
+
+        this.mTopTitleTextSize = topTitleTextSize
+        this.mCenterTitleTextSize = centerTitleTextSize
+        this.mBottomTitleTextSize = bottomTitleTextSize
+
+        this.mEachPanAngle = eachPanAngle
+        this.mEachPanAngleGap = eachPanAngleGap
+
         mPaint.isAntiAlias = true
-
-        mGranuleView = GranuleView(context)
-        val param = LayoutParams(LayoutParams.WRAP_CONTENT,LayoutParams.WRAP_CONTENT)
-        mGranuleView!!.layoutParams = param
-        addView(mGranuleView)
     }
 
     override fun onAttachedToWindow() {
@@ -125,38 +143,20 @@ class AirPurgeView: LinearLayout {
         rectF.top = measuredHeight/2f - dashedRingRadius
         rectF.right = measuredWidth/2f + dashedRingRadius
         rectF.bottom = measuredHeight/2f + dashedRingRadius
-        val eachAngleSize = 15f
-        val eachAngleGap = 5f
-        var curAngle = -eachAngleSize/2f
+        var curAngle = -mEachPanAngle/2f
         //实现渐变扇叶
-        while (curAngle < 360 - eachAngleSize) {
+        while (curAngle < 360 - mEachPanAngle) {
 
             val x0 = measuredWidth/2f + (Math.cos((curAngle)*Math.PI/180)*(dashedRingRadius-dashedRadiusDiff*0.5)).toFloat()
             val y0 = measuredHeight/2f + (Math.sin((curAngle)*Math.PI/180)*(dashedRingRadius-dashedRadiusDiff*0.5)).toFloat()
 
-            val x1 = measuredWidth/2f + (Math.cos((curAngle+eachAngleSize)*Math.PI/180)*(dashedRingRadius+dashedRadiusDiff*0.5)).toFloat()
-            val y1 = measuredHeight/2f + (Math.sin((curAngle+eachAngleSize)*Math.PI/180)*(dashedRingRadius+dashedRadiusDiff*0.5)).toFloat()
+            val x1 = measuredWidth/2f + (Math.cos((curAngle+mEachPanAngle)*Math.PI/180)*(dashedRingRadius+dashedRadiusDiff*0.5)).toFloat()
+            val y1 = measuredHeight/2f + (Math.sin((curAngle+mEachPanAngle)*Math.PI/180)*(dashedRingRadius+dashedRadiusDiff*0.5)).toFloat()
 
-            val shader = LinearGradient(
-                    x0,
-                    y0,
-                    x1,
-                    y1,
-                    Color.parseColor("#22ffffff"),
-                    Color.parseColor("#ffffffff"),
-                    Shader.TileMode.CLAMP
-            )
+            val shader = LinearGradient(x0, y0, x1, y1, Color.parseColor("#22ffffff"), Color.parseColor("#ffffffff"), Shader.TileMode.CLAMP)
             mPaint.shader = shader
-
-            canvas?.drawArc(
-                    rectF,
-                    curAngle,
-                    eachAngleSize,
-                    false,
-                    mPaint
-            )
-
-            curAngle = curAngle + eachAngleSize + eachAngleGap
+            canvas?.drawArc(rectF, curAngle, mEachPanAngle, false, mPaint)
+            curAngle = curAngle + mEachPanAngle + mEachPanAngleGap
 
         }
         mPaint.shader = null //记得清除
@@ -229,7 +229,7 @@ class AirPurgeView: LinearLayout {
         onFanAnim(true)
     }
 
-    fun onEndAnim() {
+    fun onEndAnim(isQuicklyClose:Boolean) {
         if (mJumpAnimator != null && mJumpAnimator!!.isRunning) {
             mJumpAnimator!!.cancel()
             mJumpAnimator!!.removeAllListeners()
@@ -237,7 +237,14 @@ class AirPurgeView: LinearLayout {
         if (mRotateAnimator != null && mRotateAnimator!!.isRunning) {
             mRotateAnimator!!.cancel()
         }
-        onFanAnim(false)
+        if (isQuicklyClose) {
+            dashedRadiusDiff = 0f
+            if (mBgColorAnim != null && mBgColorAnim!!.isRunning) {
+                mBgColorAnim!!.cancel()
+            }
+        } else {
+            onFanAnim(false)
+        }
     }
 
     //扇叶
@@ -253,6 +260,7 @@ class AirPurgeView: LinearLayout {
                 }
                 override fun onAnimationEnd(p0: Animator?) {
                     if (!isCancelJumpAnim) {
+                        mPanListener?.onHasOpen()
                         onRotateAnim()
                     }
                     isCancelJumpAnim = false
@@ -268,6 +276,21 @@ class AirPurgeView: LinearLayout {
         } else {
             mJumpAnimator = ObjectAnimator.ofFloat(this,"dashedRadiusDiff",dashedRadiusDiff,0f)
             mJumpAnimator!!.interpolator = AccelerateInterpolator()
+            mJumpAnimator!!.addListener(object : Animator.AnimatorListener{
+                override fun onAnimationRepeat(p0: Animator?) {
+                }
+                override fun onAnimationEnd(p0: Animator?) {
+                    if (dashedRadiusDiff == 0f) {
+                        mPanListener?.onHasClose()
+                    }
+                }
+                override fun onAnimationCancel(p0: Animator?) {
+
+                }
+                override fun onAnimationStart(p0: Animator?) {
+
+                }
+            })
             mJumpAnimator!!.duration = 1200
         }
         mJumpAnimator!!.start()
@@ -301,6 +324,7 @@ class AirPurgeView: LinearLayout {
         if (mBgColorAnim != null && mBgColorAnim!!.isRunning) {
             mBgColorAnim!!.cancel()
         }
+        if (bgColor == color) return
         mBgColorAnim = ObjectAnimator.ofInt(this,"bgColor",bgColor,color)
         mBgColorAnim!!.setEvaluator(HsvEvaluator())
         mBgColorAnim!!.duration = durtion
@@ -308,9 +332,34 @@ class AirPurgeView: LinearLayout {
         mBgColorAnim!!.start()
     }
 
+    override fun setBackgroundColor(color: Int) {
+        if (mBgColorAnim != null && mBgColorAnim!!.isRunning) {
+            mBgColorAnim!!.cancel()
+        }
+        bgColor = color
+        invalidate()
+    }
+
+    fun setTopTitle(title:String) {
+        if (this.mTopTitle.equals(title)) return
+        this.mTopTitle = title
+        invalidate()
+    }
+
     fun setCenterTitle(title:String) {
+        if (this.mCenterTitle.equals(title)) return
         this.mCenterTitle = title
         invalidate()
+    }
+
+    fun setBottomTitle(title:String) {
+        if (this.mBottomTitle.equals(title)) return
+        this.mBottomTitle = title
+        invalidate()
+    }
+
+    fun setPanListener(panListener: onPanListener) {
+        this.mPanListener = panListener
     }
 
 }

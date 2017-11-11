@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <declare-styleable name="AirPurgeLayoutView">
+        <attr name="granule_num" format="integer"/>    <!--颗粒物数-->
+        <attr name="granule_radius" format="float"/>   <!--颗粒物数-->
+        <attr name="granule_color" format="color"/>    <!--颗粒颜色,最好不透明的-->
+
+        <attr name="circle_proportion" format="float"/>  <!--圆的直径大小占宽高中最小的那个的比例-->
+        <attr name="main_color" format="color"/>            <!--实体圆环和扇叶圆环和字体的颜色-->
+        <attr name="solidring_width" format="float"/>    <!--最外圈实线圆环的宽度，最好不要太大-->
+        <attr name="dashedring_width" format="float"/>    <!--扇叶圆环的宽度，经测量是solidwidth四倍最好，可以适当调节-->
+        <attr name="toptitle" format="string"/>
+        <attr name="centertitle" format="string"/>
+        <attr name="bottomtitle" format="string"/>
+        <attr name="toptitle_textsize" format="dimension"/>
+        <attr name="centertitle_textsize" format="dimension"/>
+        <attr name="bottomtitle_textsize" format="dimension"/>
+        <attr name="speed_level" format="integer"/>     <!--风速默认3000，可以修改-->
+        <attr name="eachpan_angle" format="float"/>    <!--每片扇叶的角度 自己要计算好加间隙 一共360-->
+        <attr name="eachpan_anglegap" format="float"/>    <!--相邻扇叶的间隙-->
+
+    </declare-styleable>
+
+</resources>
