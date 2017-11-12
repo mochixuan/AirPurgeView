@@ -1,10 +1,18 @@
 apply plugin: 'com.android.library'
+apply plugin: 'com.novoda.bintray-release'
 apply plugin: 'kotlin-android'
 
 android {
     compileSdkVersion 26
     buildToolsVersion "26.0.1"
 
+    lintOptions {
+        abortOnError false
+    }
+
+    sourceSets {
+        main.java.srcDirs += 'src/main/kotlin'
+    }
 
     defaultConfig {
         minSdkVersion 14
@@ -23,6 +31,15 @@ android {
     }
 }
 
+publish {
+    userOrg = 'wangxuan'
+    groupId = 'com.wx.library'
+    artifactId = 'airpurgeview'
+    publishVersion = '1.0'
+    desc = 'First'
+    website = 'https://github.com/mochixuan/AirPurgeView/tree/master/AirPurgeMaster/airpurgeview'
+}
+
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
@@ -31,7 +48,4 @@ dependencies {
     androidTestImplementation 'com.android.support.test:runner:1.0.1'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
     compile "org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
-}
-repositories {
-    mavenCentral()
 }

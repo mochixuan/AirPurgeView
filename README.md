@@ -1,9 +1,28 @@
 # AirPurgeView
 
-## 直接先上图
+## 效果图两个
 ![main.png](http://upload-images.jianshu.io/upload_images/2646598-8db45c84c4021f47.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
 
 ![mode.gif](http://upload-images.jianshu.io/upload_images/2646598-3eaf1f0b4e27eb72.gif?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+## 引用
+
+``` java
+
+Maven
+
+<dependency>
+  <groupId>com.wx.library</groupId>
+  <artifactId>airpurgeview</artifactId>
+  <version>1.0</version>
+  <type>pom</type>
+</dependency>
+
+Gradle
+
+compile 'com.wx.library:airpurgeview:1.0'
+
+```
 
 ## 可设置的参数
 ``` java
